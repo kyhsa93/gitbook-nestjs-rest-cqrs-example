@@ -131,6 +131,16 @@ export default class Account extends AggregateRoot {
 
 ```
 
+```typescript
+// event/account.opened.ts
+import { IEvent } from '@nestjs/cqrs';
+
+export default class AccountOpenedDomainEvent implements IEvent {
+  constructor(public readonly id: string) {}
+}
+
+```
+
 도메인 계층에는 도메인 모델을 영속화하고 도메인 계층에서 도메인의 컬렉션 인터페이스를 제공하기 위한 Repository 도 위치합니다. 다만 여기서는 Repository 의 인터페이스만을 정의하고 실제 구현체는 인프라 계층에서 하게 되는데, 이는 도메인에 대한 컬렉션 인터페이스를 제공하지만 도메인 객체의 영속화를 위한 구현은 도메인이 아닌 기술적 구현에 해당하기 때문에 분리된 인터페이스\(Separated interface\)를 적용하여 인터페이스와 구현체를 서로 다른 계층으로 분리합니다.
 
 ```typescript

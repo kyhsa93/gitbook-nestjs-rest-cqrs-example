@@ -5,7 +5,7 @@
 
 ## 구조와 동작 원리 <a id="architecture"></a>
 
-* [인터페이스 계층의 컨트롤러와 DTO](architecture/interface-layer.md)
-* [응용 계층의 CQRS](architecture/application-layer.md)
 * [도메인 계층](architecture/domain-layer.md)
+* [응용 계층의 CQRS](architecture/application-layer.md)
+* [인터페이스 계층의 컨트롤러와 DTO](architecture/interface-layer.md)
 
