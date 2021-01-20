@@ -1,6 +1,6 @@
 # API Reference
 
-{% api-method method="post" host="" path="/accounts" %}
+{% api-method method="post" host="" path="https://example.com/accounts" %}
 {% api-method-summary %}
 Open Account
 {% endapi-method-summary %}
