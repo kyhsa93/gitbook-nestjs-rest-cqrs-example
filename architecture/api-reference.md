@@ -38,7 +38,7 @@ account name
 
 {% api-method method="post" host="" path="https://example.com/accounts/remittance" %}
 {% api-method-summary %}
-
+Remittance
 {% endapi-method-summary %}
 
 {% api-method-description %}
@@ -76,30 +76,46 @@ remittance amount
 
 ```
 {% endapi-method-response-example %}
+{% endapi-method-response %}
+{% endapi-method-spec %}
+{% endapi-method %}
 
-{% api-method-response-example httpCode=404 %}
+{% api-method method="put" host="" path="https://example.com/accounts/:accountId" %}
+{% api-method-summary %}
+Update Account
+{% endapi-method-summary %}
+
+{% api-method-description %}
+
+{% endapi-method-description %}
+
+{% api-method-spec %}
+{% api-method-request %}
+{% api-method-path-parameters %}
+{% api-method-parameter name="accountId" type="string" required=true %}
+target account id
+{% endapi-method-parameter %}
+{% endapi-method-path-parameters %}
+
+{% api-method-body-parameters %}
+{% api-method-parameter name="oldPassword" type="string" required=true %}
+old account password
+{% endapi-method-parameter %}
+
+{% api-method-parameter name="newPassword" type="string" required=true %}
+new account password
+{% endapi-method-parameter %}
+{% endapi-method-body-parameters %}
+{% endapi-method-request %}
+
+{% api-method-response %}
+{% api-method-response-example httpCode=200 %}
 {% api-method-response-example-description %}
 
 {% endapi-method-response-example-description %}
 
 ```
-{
-    "statusCode": 404,
-    "message": "Sender account is not found"
-}
-```
-{% endapi-method-response-example %}
 
-{% api-method-response-example httpCode=500 %}
-{% api-method-response-example-description %}
-
-{% endapi-method-response-example-description %}
-
-```
-{
-    "statusCode": 500,
-    "message": "Internal server error"
-}
 ```
 {% endapi-method-response-example %}
 {% endapi-method-response %}
