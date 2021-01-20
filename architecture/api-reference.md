@@ -134,13 +134,13 @@ Delete Account
 {% api-method-spec %}
 {% api-method-request %}
 {% api-method-path-parameters %}
-{% api-method-parameter name="accountId" type="string" required=false %}
+{% api-method-parameter name="accountId" type="string" required=true %}
 target account id
 {% endapi-method-parameter %}
 {% endapi-method-path-parameters %}
 
 {% api-method-body-parameters %}
-{% api-method-parameter name="password" type="string" required=false %}
+{% api-method-parameter name="password" type="string" required=true %}
 target account password
 {% endapi-method-parameter %}
 {% endapi-method-body-parameters %}
@@ -212,7 +212,7 @@ Get Account
 {% api-method-spec %}
 {% api-method-request %}
 {% api-method-path-parameters %}
-{% api-method-parameter name="accountId" type="string" required=false %}
+{% api-method-parameter name="accountId" type="string" required=true %}
 target account id
 {% endapi-method-parameter %}
 {% endapi-method-path-parameters %}
