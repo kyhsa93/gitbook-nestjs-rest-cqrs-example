@@ -1,6 +1,7 @@
 # 시작하며
 
-NestJS 로 Backend service 를 개발하며 이 프레임워크로 어떻게 Microservice architecture, Domain-driven design, CQRS 를 구현하면 좋을것인가에 대해 정리해보고자 합니다.
+NestJS 로 Backend service 를 개발하며 이 프레임워크로 어떻게 Microservice architecture, Domain-driven design, CQRS 를 구현하면 좋을것인가에 대해 정리해보고자 합니다.  
+여기에 사용된 예제는 [이곳](https://github.com/kyhsa93/nestjs-rest-cqrs-example)에서 보실 수 있습니다.
 
 ## NestJS
 
