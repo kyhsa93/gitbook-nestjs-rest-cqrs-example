@@ -85,7 +85,7 @@ account password
 {% endapi-method-request %}
 
 {% api-method-response %}
-{% api-method-response-example httpCode=200 %}
+{% api-method-response-example httpCode=201 %}
 {% api-method-response-example-description %}
 The request was successful
 {% endapi-method-response-example-description %}
@@ -115,6 +115,16 @@ Authentication failed \(this server authenticates with password, not token or se
 ```
 {% endapi-method-response-example %}
 
+{% api-method-response-example httpCode=404 %}
+{% api-method-response-example-description %}
+
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
 {% api-method-response-example httpCode=422 %}
 {% api-method-response-example-description %}
 The server understood the request and the syntax is correct, but could not fulfill the request
@@ -128,6 +138,78 @@ The server understood the request and the syntax is correct, but could not fulfi
 {% api-method-response-example httpCode=500 %}
 {% api-method-response-example-description %}
 An unexpected error occurred inside the server
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+{% endapi-method-response %}
+{% endapi-method-spec %}
+{% endapi-method %}
+
+{% api-method method="post" host="" path="/:accountId/deposit" %}
+{% api-method-summary %}
+Deposit
+{% endapi-method-summary %}
+
+{% api-method-description %}
+
+{% endapi-method-description %}
+
+{% api-method-spec %}
+{% api-method-request %}
+{% api-method-path-parameters %}
+{% api-method-parameter name="accountId" type="string" required=true %}
+target account id
+{% endapi-method-parameter %}
+{% endapi-method-path-parameters %}
+
+{% api-method-body-parameters %}
+{% api-method-parameter name="amount" type="integer" required=true %}
+deposit amount
+{% endapi-method-parameter %}
+
+{% api-method-parameter name="password" type="string" required=true %}
+account password
+{% endapi-method-parameter %}
+{% endapi-method-body-parameters %}
+{% endapi-method-request %}
+
+{% api-method-response %}
+{% api-method-response-example httpCode=201 %}
+{% api-method-response-example-description %}
+
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=404 %}
+{% api-method-response-example-description %}
+
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+
 {% endapi-method-response-example-description %}
 
 ```
