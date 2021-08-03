@@ -56,7 +56,7 @@ An unexpected error occurred inside the server
 {% endapi-method-spec %}
 {% endapi-method %}
 
-{% api-method method="post" host="" path="/:accountId/withdraw" %}
+{% api-method method="post" host="" path="https://example.com/:accountId/withdraw" %}
 {% api-method-summary %}
 Withdraw
 {% endapi-method-summary %}
@@ -148,7 +148,7 @@ An unexpected error occurred inside the server
 {% endapi-method-spec %}
 {% endapi-method %}
 
-{% api-method method="post" host="" path="/:accountId/deposit" %}
+{% api-method method="post" host="" path="https://example.com/:accountId/deposit" %}
 {% api-method-summary %}
 Deposit
 {% endapi-method-summary %}
@@ -266,9 +266,9 @@ remittance amount
 {% endapi-method-spec %}
 {% endapi-method %}
 
-{% api-method method="put" host="" path="https://example.com/accounts/:accountId" %}
+{% api-method method="put" host="" path="https://example.com/accounts/:accountId/password" %}
 {% api-method-summary %}
-Update Account
+Update account password
 {% endapi-method-summary %}
 
 {% api-method-description %}
@@ -284,7 +284,7 @@ target account id
 {% endapi-method-path-parameters %}
 
 {% api-method-body-parameters %}
-{% api-method-parameter name="oldPassword" type="string" required=true %}
+{% api-method-parameter name="password" type="string" required=true %}
 old account password
 {% endapi-method-parameter %}
 
@@ -297,7 +297,47 @@ new account password
 {% api-method-response %}
 {% api-method-response-example httpCode=200 %}
 {% api-method-response-example-description %}
+The request was successful
+{% endapi-method-response-example-description %}
 
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+The request is not valid
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+Authentication failed \(this server authenticates with password, not token or session\)
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=404 %}
+{% api-method-response-example-description %}
+No accounts found matching the given id
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+An unexpected error occurred inside the server
 {% endapi-method-response-example-description %}
 
 ```
