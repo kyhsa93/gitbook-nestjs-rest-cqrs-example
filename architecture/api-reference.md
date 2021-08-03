@@ -521,9 +521,29 @@ target account id
 ```
 {% endapi-method-response-example %}
 
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+The request is not valid
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
 {% api-method-response-example httpCode=404 %}
 {% api-method-response-example-description %}
+No accounts found matching the given id
+{% endapi-method-response-example-description %}
 
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+An unexpected error occurred inside the server
 {% endapi-method-response-example-description %}
 
 ```
