@@ -5,122 +5,285 @@
 CQRS 의 Command 와 Command handler 가 여기에 위치하며 이 부분을 서비스라고 할 수 있습니다. Command handler 는 Command bus 를 통해 수신한 Command 를 사용하여 도메인의 변경을 담당합니다. 또한 각각의 Command handler 는 하나의 트랜젝션으로 동작합니다. 이것을 이용하여 하나의 기능인 Command 와 서비스에서 호출된 도메인 로직이 일관성 있게 동작하도록 합니다. 
 
 ```typescript
-// command/implements/open.account.ts
+// commands/open-account.command.ts
 import { ICommand } from '@nestjs/cqrs';
 
-export default class OpenAccountCommand implements ICommand {
-  constructor(public readonly name: string, public readonly password: string) {}
+export class OpenAccountCommand implements ICommand {
+  constructor(readonly name: string, readonly password: string) {}
 }
 
 ```
 
 ```typescript
-// command/handlers/open.account.ts
-import { Transaction } from 'typeorm';
-import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
+// commands/open-account.handler.ts
 import { Inject } from '@nestjs/common';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
-import OpenAccountCommand from '@src/account/application/command/implements/open.account';
+import { OpenAccountCommand } from 'src/accounts/application/commands/open-account.command';
+import { InjectionToken } from 'src/accounts/application/injection.token';
 
-import AccountFactory from '@src/account/domain/factory';
-import AccountRepository from '@src/account/domain/repository';
+import { AccountFactory } from 'src/accounts/domain/factory';
+import { AccountRepository } from 'src/accounts/domain/repository';
 
 @CommandHandler(OpenAccountCommand)
-export default class OpenAccountCommandHandler implements ICommandHandler<OpenAccountCommand> {
+export class OpenAccountHandler
+  implements ICommandHandler<OpenAccountCommand, void>
+{
   constructor(
+    @Inject(InjectionToken.ACCOUNT_REPOSITORY)
+    private readonly accountRepository: AccountRepository,
     private readonly accountFactory: AccountFactory,
-    private readonly eventPublisher: EventPublisher,
-    @Inject('AccountRepositoryImplement') private readonly accountRepository: AccountRepository,
   ) {}
 
-  @Transaction()
-  public async execute(command: OpenAccountCommand): Promise<void> {
-    const { name, password } = command;
-
-    const id = await this.accountRepository.newId();
-
-    const account = this.eventPublisher.mergeObjectContext(
-      this.accountFactory.create(id, name, password),
+  async execute(command: OpenAccountCommand): Promise<void> {
+    const account = this.accountFactory.create(
+      await this.accountRepository.newId(),
+      command.name,
     );
 
+    account.open(command.password);
+
     await this.accountRepository.save(account);
-    
+
     account.commit();
   }
 }
 
 ```
 
+```typescript
+// commands/open-account.handler.spec.ts
+import { ModuleMetadata, Provider } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+
+import { OpenAccountCommand } from 'src/accounts/application/commands/open-account.command';
+import { OpenAccountHandler } from 'src/accounts/application/commands/open-account.handler';
+import { InjectionToken } from 'src/accounts/application/injection.token';
+import { AccountFactory } from 'src/accounts/domain/factory';
+
+import { AccountRepository } from 'src/accounts/domain/repository';
+
+describe('OpenAccountHandler', () => {
+  let handler: OpenAccountHandler;
+  let repository: AccountRepository;
+  let factory: AccountFactory;
+
+  beforeEach(async () => {
+    const repoProvider: Provider = {
+      provide: InjectionToken.ACCOUNT_REPOSITORY,
+      useValue: {},
+    };
+    const factoryProvider: Provider = {
+      provide: AccountFactory,
+      useValue: {},
+    };
+    const providers: Provider[] = [
+      OpenAccountHandler,
+      repoProvider,
+      factoryProvider,
+    ];
+    const moduleMetadata: ModuleMetadata = { providers };
+    const testModule = await Test.createTestingModule(moduleMetadata).compile();
+
+    handler = testModule.get(OpenAccountHandler);
+    repository = testModule.get(InjectionToken.ACCOUNT_REPOSITORY);
+    factory = testModule.get(AccountFactory);
+  });
+
+  describe('execute', () => {
+    it('should execute OpenAccountCommand', async () => {
+      const account = { open: jest.fn(), commit: jest.fn() };
+
+      factory.create = jest.fn().mockReturnValue(account);
+      repository.newId = jest.fn().mockResolvedValue('accountId');
+      repository.save = jest.fn().mockResolvedValue(undefined);
+
+      const command = new OpenAccountCommand('accountId', 'password');
+
+      await expect(handler.execute(command)).resolves.toEqual(undefined);
+      expect(repository.newId).toBeCalledTimes(1);
+      expect(account.open).toBeCalledTimes(1);
+      expect(account.open).toBeCalledWith(command.password);
+      expect(repository.save).toBeCalledTimes(1);
+      expect(repository.save).toBeCalledWith(account);
+      expect(account.commit).toBeCalledTimes(1);
+    });
+  });
+});
+
+```
+
 CQRS 의 Query 와 Query handler 역시 이곳에 구현됩니다. Query handler 도 Command handler 와 마찬가지로 Query bus 를 통해 받은 Query 를 사용하며, 각각의 Query 에 맞는 데이터 모델을 데이터 저장소에서 조회합니다. 다만 Query 로 조회된 데이터 모델은 도메인 모델과 일치하지 않을 수 있으며 다양한 형태를 가질 수 있습니다.
 
 ```typescript
-// query/implements/find.ts
-import { IQuery } from "@nestjs/cqrs";
+// queries/find-accounts.query.ts
+import { IQuery } from '@nestjs/cqrs';
 
-export default class FindAccountsQuery implements IQuery {
-  constructor(
-    public readonly take: number,
-    public readonly page: number,
-    public readonly where?: { names: string[] },
-  ){}
+export class FindAccountsQuery implements IQuery {
+  constructor(readonly offset: number, readonly limit: number) {}
 }
 
 ```
 
 ```typescript
-// query/handlers/find.ts
-import { Inject } from "@nestjs/common";
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+// queries/find-accounts.result.ts
+import { IQueryResult } from '@nestjs/cqrs';
 
-import FindAccountsQuery from "@src/account/application/query/implements/find";
-import { AccountsAndCount, Query } from "@src/account/application/query/query";
+export class ItemInFindAccountsResult {
+  readonly id: string = '';
+  readonly name: string = '';
+  readonly balance: number = 0;
+}
+
+export class FindAccountsResult
+  extends Array<ItemInFindAccountsResult>
+  implements IQueryResult {}
+
+```
+
+```typescript
+// queries/find-accounts.query.handler.ts
+import { Inject, InternalServerErrorException } from '@nestjs/common';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { InjectionToken } from 'src/accounts/application/injection.token';
+import {
+  AccountQuery,
+  ItemInAccounts,
+} from 'src/accounts/application/queries/account.query';
+import { FindAccountsQuery } from 'src/accounts/application/queries/find-accounts.query';
+import {
+  FindAccountsResult,
+  ItemInFindAccountsResult,
+} from 'src/accounts/application/queries/find-accounts.result';
 
 @QueryHandler(FindAccountsQuery)
-export default class FindAccountsQueryHandler implements IQueryHandler<FindAccountsQuery> {
-  constructor(@Inject('AccountQuery') private readonly accountQuery: Query ){}
+export class FindAccountsHandler
+  implements IQueryHandler<FindAccountsQuery, FindAccountsResult>
+{
+  constructor(
+    @Inject(InjectionToken.ACCOUNT_QUERY) readonly accountQuery: AccountQuery,
+  ) {}
 
-  public async execute(query: FindAccountsQuery): Promise<AccountsAndCount> {
-    return this.accountQuery.findAndCount(query);
+  async execute(query: FindAccountsQuery): Promise<FindAccountsResult> {
+    return (await this.accountQuery.find(query.offset, query.limit)).map(
+      this.filterResultProperties,
+    );
+  }
+
+  private filterResultProperties(
+    data: ItemInAccounts,
+  ): ItemInFindAccountsResult {
+    const dataKeys = Object.keys(data);
+    const resultKeys = Object.keys(new ItemInFindAccountsResult());
+
+    if (dataKeys.length < resultKeys.length)
+      throw new InternalServerErrorException();
+
+    if (resultKeys.find((resultKey) => !dataKeys.includes(resultKey)))
+      throw new InternalServerErrorException();
+
+    dataKeys
+      .filter((dataKey) => !resultKeys.includes(dataKey))
+      .forEach((dataKey) => delete data[dataKey]);
+
+    return data;
   }
 }
 
 ```
 
 ```typescript
-// query/query.ts
-import { IQueryResult } from "@nestjs/cqrs";
+// queries/find-accounts.query.handler.spec.ts
+import { ModuleMetadata, Provider } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 
-export interface AccountFindConditions {
-  readonly take: number;
-  readonly page: number;
-  readonly where?: AccountWhereConditions;
+import { InjectionToken } from 'src/accounts/application/injection.token';
+import {
+  AccountQuery,
+  Accounts,
+} from 'src/accounts/application/queries/account.query';
+import { FindAccountsHandler } from 'src/accounts/application/queries/find-accounts.handler';
+import { FindAccountsQuery } from 'src/accounts/application/queries/find-accounts.query';
+import { FindAccountsResult } from 'src/accounts/application/queries/find-accounts.result';
+
+describe('FindAccountsHandler', () => {
+  let handler: FindAccountsHandler;
+  let accountQuery: AccountQuery;
+
+  beforeEach(async () => {
+    const queryProvider: Provider = {
+      provide: InjectionToken.ACCOUNT_QUERY,
+      useValue: {},
+    };
+    const providers: Provider[] = [queryProvider, FindAccountsHandler];
+    const moduleMetadata: ModuleMetadata = { providers };
+    const testModule = await Test.createTestingModule(moduleMetadata).compile();
+    handler = testModule.get(FindAccountsHandler);
+    accountQuery = testModule.get(InjectionToken.ACCOUNT_QUERY);
+  });
+
+  describe('execute', () => {
+    it('should return FindAccountsResult when execute FindAccountsQuery', async () => {
+      const accounts: Accounts = [
+        {
+          id: 'accountId',
+          name: 'test',
+          password: 'password',
+          balance: 0,
+          openedAt: expect.anything(),
+          updatedAt: expect.anything(),
+          closedAt: null,
+        },
+      ];
+      accountQuery.find = jest.fn().mockResolvedValue(accounts);
+
+      const query = new FindAccountsQuery(0, 1);
+
+      const result: FindAccountsResult = [
+        {
+          id: 'accountId',
+          name: 'test',
+          balance: 0,
+        },
+      ];
+
+      await expect(handler.execute(query)).resolves.toEqual(result);
+      expect(accountQuery.find).toBeCalledTimes(1);
+      expect(accountQuery.find).toBeCalledWith(query.offset, query.limit);
+    });
+  });
+});
+
+```
+
+```typescript
+// queries/account.query.ts
+export class Account {
+  readonly id: string;
+  readonly name: string;
+  readonly password: string;
+  readonly balance: number;
+  readonly openedAt: Date;
+  readonly updatedAt: Date;
+  readonly closedAt: Date | null;
 }
 
-export interface AccountWhereConditions {
-  readonly names: string[];
+export class ItemInAccounts {
+  readonly id: string;
+  readonly name: string;
+  readonly password: string;
+  readonly balance: number;
+  readonly openedAt: Date;
+  readonly updatedAt: Date;
+  readonly closedAt: Date | null;
 }
 
-// ...
+export class Accounts extends Array<ItemInAccounts> {}
 
-export interface Accounts
-  extends Array<{
-    readonly id: string;
-    readonly name: string;
-    readonly openedAt: Date;
-  }>, IQueryResult {}
-
-export interface AccountsAndCount extends IQueryResult {
-  readonly count: number;
-  readonly data: { 
-    readonly id: string;
-    readonly name: string;
-    readonly openedAt: Date;
-   }[]
-}
-
-export interface Query {
-  findById(id: string): Promise<undefined | Account>;
-  findAndCount(conditions: AccountFindConditions): Promise<AccountsAndCount>;
+export interface AccountQuery {
+  findById: (id: string) => Promise<Account>;
+  find: (offset: number, limit: number) => Promise<Accounts>;
 }
 
 ```
@@ -128,38 +291,73 @@ export interface Query {
 서비스에서 기능을 처리하기 위해 외부 컨텍스트의 서비스를 호출해야하는 상황이 있을 수 있습니다. 이를 위한 어댑터가 이곳에 인터페이스로 위치하며 서비스에서 필요시 주입받아 사용하게 됩니다. 도메인의 변경으로 발생한 도메인 이벤트를 도메인 이벤트 핸들러를 통하여 처리합니다. 도메인 이벤트 핸들러는 응용 계층에서 주어진 이벤트를 처리하며, 통합 이벤트의 형태로 외부에 전파하는 역할도 수행합니다.
 
 ```typescript
-// event/implements/account.opened.ts
-import { Event } from '@src/account/application/event/publisher';
+// events/integration.ts
+import { AccountProperties } from 'src/accounts/domain/account';
 
-export default class AccountCreatedIntegrationEvent implements Event {
-  constructor(
-    public readonly key: string,
-    public readonly data: { readonly id: string; },
-  ) {}
+export class Event {
+  readonly subject: string;
+  readonly data: AccountProperties;
 }
+
+export class IntegrationEvent {
+  readonly subject: string;
+  readonly data: Record<string, string>;
+}
+
+export interface IntegrationEventPublisher {
+  publish: (event: IntegrationEvent) => Promise<void>;
+}
+
+export interface EventStore {
+  save: (event: Event) => Promise<void>;
+}
+
+export enum IntegrationEventSubject {
+  OPENED = 'account.opened',
+  CLOSED = 'account.closed',
+  DEPOSITED = 'account.deposited',
+  WITHDRAWN = 'account.withdrawn',
+  PASSWORD_UPDATED = 'account.password.updated',
+}
+
 
 ```
 
 ```typescript
-// event/handlers/account.opened.ts
-import { Inject } from '@nestjs/common';
+// events/account-opened.handler.ts
+import { Inject, Logger } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 
-import IntegrationEvent from '@src/account/application/event/implements/account.opened';
-import { Publisher } from '@src/account/application/event/publisher';
+import {
+  EventStore,
+  IntegrationEventPublisher,
+  IntegrationEventSubject,
+} from 'src/accounts/application/events/integration';
+import { InjectionToken } from 'src/accounts/application/injection.token';
 
-import AccountOpenedDomainEvent from '@src/account/domain/event/account.opened';
+import { AccountOpenedEvent } from 'src/accounts/domain/events/account-opened.event';
 
-const MESSAGE_KEY = 'account.opened';
+@EventsHandler(AccountOpenedEvent)
+export class AccountOpenedHandler implements IEventHandler<AccountOpenedEvent> {
+  constructor(
+    private readonly logger: Logger,
+    @Inject(InjectionToken.INTEGRATION_EVENT_PUBLISHER)
+    private readonly publisher: IntegrationEventPublisher,
+    @Inject(InjectionToken.EVENT_STORE) private readonly eventStore: EventStore,
+  ) {}
 
-@EventsHandler(AccountOpenedDomainEvent)
-export default class AccountOpenedDomainEventHandler
-  implements IEventHandler<AccountOpenedDomainEvent> {
-  constructor(@Inject('IntegrationEventPublisher') private readonly publisher: Publisher) {}
-
-  public async handle(event: AccountOpenedDomainEvent): Promise<void> {
-    const integrationEvent = new IntegrationEvent(MESSAGE_KEY, event);
-    await this.publisher.publish(integrationEvent);
+  async handle(event: AccountOpenedEvent): Promise<void> {
+    this.logger.log(
+      `${IntegrationEventSubject.OPENED}: ${JSON.stringify(event)}`,
+    );
+    await this.publisher.publish({
+      subject: IntegrationEventSubject.OPENED,
+      data: { id: event.id },
+    });
+    await this.eventStore.save({
+      subject: IntegrationEventSubject.OPENED,
+      data: event,
+    });
   }
 }
 
