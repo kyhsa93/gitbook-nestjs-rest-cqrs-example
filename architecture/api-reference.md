@@ -448,15 +448,11 @@ Get Accounts
 {% api-method-spec %}
 {% api-method-request %}
 {% api-method-query-parameters %}
-{% api-method-parameter name="names" type="array" required=false %}
-account names
+{% api-method-parameter name="offset" type="string" required=false %}
+pagination offset
 {% endapi-method-parameter %}
 
-{% api-method-parameter name="page" type="string" required=false %}
-pagination count
-{% endapi-method-parameter %}
-
-{% api-method-parameter name="take" type="string" required=false %}
+{% api-method-parameter name="limit" type="string" required=false %}
 number of accounts
 {% endapi-method-parameter %}
 {% endapi-method-query-parameters %}
@@ -465,7 +461,27 @@ number of accounts
 {% api-method-response %}
 {% api-method-response-example httpCode=200 %}
 {% api-method-response-example-description %}
+ The request was successful
+{% endapi-method-response-example-description %}
 
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+The request is not valid
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+An unexpected error occurred inside the server
 {% endapi-method-response-example-description %}
 
 ```
