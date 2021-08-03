@@ -373,13 +373,14 @@ export class AccountOpenedEvent implements IEvent, AccountProperties {
 
 ```typescript
 // domain/repository.ts
-import Account from '@src/account/domain/model/account';
+import { Account } from 'src/accounts/domain/account';
 
-export default interface AccountRepository {
-  newId(): Promise<string>;
-  save(account: Account | Account[]): Promise<void>;
-  findById(id: string): Promise<Account | undefined>;
-  findByName(name: string): Promise<Account[]>;
+export interface AccountRepository {
+  newId: () => Promise<string>;
+  save: (account: Account | Account[]) => Promise<void>;
+  findById: (id: string) => Promise<Account | null>;
+  findByIds: (ids: string[]) => Promise<Account[]>;
+  findByName: (name: string) => Promise<Account[]>;
 }
 
 ```
