@@ -13,112 +13,215 @@
 컨트롤러의 메소드는 요청으로 받은 값을 이용하여 각각의 요청에 맞는 Command, Query 객체를 생성하여 주입된 CommandBus 혹은 QueryBus 를 통하여 실행하고, 결과 값을 받아 클라이언트에게 응답합니다.
 
 ```typescript
-// open.account.body.ts
+// dto/open-account.body.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 
-export default class OpenAccountBody {
-  @ApiProperty({ example: 'name' })
+export class OpenAccountBodyDTO {
   @IsString()
-  public readonly name: string = '';
+  @MinLength(2)
+  @MaxLength(8)
+  @ApiProperty({ minLength: 2, maxLength: 8, example: 'young' })
+  readonly name: string;
 
-  @ApiProperty({ example: 'testpassword' })
   @IsString()
-  public readonly password: string = '';
+  @MinLength(8)
+  @MaxLength(20)
+  @ApiProperty({ minLength: 8, maxLength: 20, example: 'password' })
+  readonly password: string;
 }
+
 ```
 
 ```typescript
-// account.controller.ts
-import { ApiTags } from '@nestjs/swagger';
+// interface/accounts.controller.ts
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Delete,
   Get,
   Param,
+  Post,
   Put,
-  Delete,
-  NotFoundException,
   Query,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import {
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 
-import OpenAccountBody from '@src/account/interface/dto/open.account.body';
-import UpdateAccountPathParam from '@src/account/interface/dto/update.account.param';
-import UpdateAccountBody from '@src/account/interface/dto/update.account.body';
-import CloseAccountPathParam from '@src/account/interface/dto/close.account.param';
-import CloseAccountBody from '@src/account/interface/dto/close.account.body';
-import ReadAccountPathParam from '@src/account/interface/dto/get.account.by.id.param';
-import GetAccountQuery from '@src/account/interface/dto/get.account.query';
+import { DepositBodyDTO } from 'src/accounts/interface/dto/deposit.body.dto';
+import { FindAccountsQueryDTO } from 'src/accounts/interface/dto/find-accounts.query.dto';
+import { OpenAccountBodyDTO } from 'src/accounts/interface/dto/open-account.body.dto';
+import { UpdatePasswordBodyDTO } from 'src/accounts/interface/dto/update-password.body.dto';
+import { WithdrawBodyDTO } from 'src/accounts/interface/dto/withdraw.body.dto';
+import { RemitBodyDTO } from 'src/accounts/interface/dto/remit.body.dto';
+import { WithdrawParamDTO } from 'src/accounts/interface/dto/withdraw.param.dto';
+import { DepositParamDTO } from 'src/accounts/interface/dto/deposit.param.dto';
+import { RemitParamDTO } from 'src/accounts/interface/dto/remit.param.dto';
+import { UpdatePasswordParamDTO } from 'src/accounts/interface/dto/update-password.param.dto';
+import { DeleteAccountParamDTO } from 'src/accounts/interface/dto/delete-account.param.dto';
+import { DeleteAccountQueryDTO } from 'src/accounts/interface/dto/delete-account.query.dto';
+import { FindAccountByIdParamDTO } from 'src/accounts/interface/dto/find-account-by-id.param.dto';
+import { FindAccountByIdResponseDTO } from 'src/accounts/interface/dto/find-account-by-id.response.dto';
+import { FindAccountsResponseDTO } from 'src/accounts/interface/dto/find-accounts.response.dto';
+import { ResponseDescription } from 'src/accounts/interface/response-description';
 
-import OpenAccountCommand from '@src/account/application/command/implements/open.account';
-import ReadAccountQuery from '@src/account/application/query/implements/find.by.id';
-import UpdateAccountCommand from '@src/account/application/command/implements/update.account';
-import CloseAccountCommand from '@src/account/application/command/implements/close.account';
-import { Account, AccountsAndCount } from '@src/account/application/query/query';
-import FindAccountQuery from '@src/account/application/query/implements/find';
-import RemittanceBody from '@src/account/interface/dto/remittance.body';
-import RemittanceCommand from '@src/account/application/command/implements/remittance';
+import { CloseAccountCommand } from 'src/accounts/application/commands/close-account.command';
+import { DepositCommand } from 'src/accounts/application/commands/deposit.command';
+import { OpenAccountCommand } from 'src/accounts/application/commands/open-account.command';
+import { UpdatePasswordCommand } from 'src/accounts/application/commands/update-password.command';
+import { WithdrawCommand } from 'src/accounts/application/commands/withdraw.command';
+import { FindAccountByIdQuery } from 'src/accounts/application/queries/find-account-by-id.query';
+import { FindAccountsQuery } from 'src/accounts/application/queries/find-accounts.query';
+import { RemitCommand } from 'src/accounts/application/commands/remit.command';
 
 @ApiTags('Accounts')
-@Controller('/accounts')
-export default class AccountController {
-  constructor(private readonly commandBus: CommandBus, private readonly queryBus: QueryBus) {}
+@Controller('accounts')
+export class AccountsController {
+  constructor(readonly commandBus: CommandBus, readonly queryBus: QueryBus) {}
 
   @Post()
-  public async handleOpenAccountRequest(@Body() body: OpenAccountBody): Promise<void> {
-    const { name, password } = body;
-    await this.commandBus.execute(new OpenAccountCommand(name, password));
-  }
-
-  @Post('/remittance')
-  public async handleRemittanceRequest(@Body() body: RemittanceBody): Promise<void> {
-    const { senderId, receiverId, password, amount } = body;
-    const command = new RemittanceCommand(senderId, receiverId, password, amount);
+  @ApiResponse({ status: 201, description: ResponseDescription.CREATED })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async openAccount(@Body() body: OpenAccountBodyDTO): Promise<void> {
+    const command = new OpenAccountCommand(body.name, body.password);
     await this.commandBus.execute(command);
   }
 
-  @Put(':id')
-  public async handleUpdateAccountRequest(
-    @Param() param: UpdateAccountPathParam,
-    @Body() body: UpdateAccountBody,
+  @Post('/:id/withdraw')
+  @ApiResponse({ status: 201, description: ResponseDescription.CREATED })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.UNAUTHORIZED })
+  @ApiUnprocessableEntityResponse({
+    description: ResponseDescription.UNPROCESSABLE_ENTITY,
+  })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async withdraw(
+    @Param() param: WithdrawParamDTO,
+    @Body() body: WithdrawBodyDTO,
   ): Promise<void> {
-    const { oldPassword, newPassword } = body;
-    await this.commandBus.execute(new UpdateAccountCommand(param.id, oldPassword, newPassword));
+    const command = new WithdrawCommand({ ...param, ...body });
+    await this.commandBus.execute(command);
   }
 
-  @Delete(':id')
-  public async handleCloseAccountRequest(
-    @Param() param: CloseAccountPathParam,
-    @Body() body: CloseAccountBody,
+  @Post('/:id/deposit')
+  @ApiResponse({ status: 201, description: ResponseDescription.CREATED })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async deposit(
+    @Param() param: DepositParamDTO,
+    @Body() body: DepositBodyDTO,
   ): Promise<void> {
-    const { password } = body;
-    await this.commandBus.execute(new CloseAccountCommand(param.id, password));
+    const command = new DepositCommand({ ...param, ...body });
+    await this.commandBus.execute(command);
+  }
+
+  @Post('/:id/remit')
+  @ApiResponse({ status: 201, description: ResponseDescription.CREATED })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.UNAUTHORIZED })
+  @ApiUnprocessableEntityResponse({
+    description: ResponseDescription.UNPROCESSABLE_ENTITY,
+  })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async remit(
+    @Param() param: RemitParamDTO,
+    @Body() body: RemitBodyDTO,
+  ): Promise<void> {
+    const command = new RemitCommand({ ...param, ...body });
+    await this.commandBus.execute(command);
+  }
+
+  @Put('/:id/password')
+  @ApiResponse({ status: 200, description: ResponseDescription.OK })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.UNAUTHORIZED })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async updatePassword(
+    @Param() param: UpdatePasswordParamDTO,
+    @Body() body: UpdatePasswordBodyDTO,
+  ): Promise<void> {
+    const command = new UpdatePasswordCommand({ ...param, ...body });
+    await this.commandBus.execute(command);
+  }
+
+  @Delete('/:id')
+  @ApiResponse({ status: 200, description: ResponseDescription.OK })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.UNAUTHORIZED })
+  @ApiUnprocessableEntityResponse({
+    description: ResponseDescription.UNPROCESSABLE_ENTITY,
+  })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async closeAccount(
+    @Param() param: DeleteAccountParamDTO,
+    @Query() query: DeleteAccountQueryDTO,
+  ): Promise<void> {
+    const command = new CloseAccountCommand(param.id, query.password);
+    await this.commandBus.execute(command);
   }
 
   @Get()
-  public async handleGetAccountRequest(
-    @Query() { take = 10, page = 1, names = [] }: GetAccountQuery,
-  ): Promise<AccountsAndCount> {
-    const conditions = { names: this.toArray(names) };
-    const query = new FindAccountQuery(take, page, conditions);
+  @ApiResponse({
+    status: 200,
+    description: ResponseDescription.OK,
+    type: FindAccountsResponseDTO,
+  })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async findAccounts(
+    @Query() queryDto: FindAccountsQueryDTO,
+  ): Promise<FindAccountsResponseDTO> {
+    const query = new FindAccountsQuery(queryDto.offset, queryDto.limit);
+    return { accounts: await this.queryBus.execute(query) };
+  }
+
+  @Get('/:id')
+  @ApiResponse({
+    status: 200,
+    description: ResponseDescription.OK,
+    type: FindAccountByIdResponseDTO,
+  })
+  @ApiBadRequestResponse({ description: ResponseDescription.BAD_REQUEST })
+  @ApiNotFoundResponse({ description: ResponseDescription.NOT_FOUND })
+  @ApiInternalServerErrorResponse({
+    description: ResponseDescription.INTERNAL_SERVER_ERROR,
+  })
+  async findAccountById(
+    @Param() param: FindAccountByIdParamDTO,
+  ): Promise<FindAccountByIdResponseDTO> {
+    const query = new FindAccountByIdQuery(param.id);
     return this.queryBus.execute(query);
   }
-
-  @Get(':id')
-  public async handlerGetAccountByIdRequest(
-    @Param() param: ReadAccountPathParam,
-  ): Promise<Account> {
-    const account: Account = await this.queryBus.execute(new ReadAccountQuery(param.id));
-    if (!account) throw new NotFoundException();
-    return account;
-  }
-
-  private toArray(value: string | string[]): string[] {
-    return Array.isArray(value) ? value : [value].filter(item => item !== undefined);
-  }
 }
+
 
 ```
 
