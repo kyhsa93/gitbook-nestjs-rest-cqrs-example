@@ -365,17 +365,67 @@ target account id
 {% endapi-method-parameter %}
 {% endapi-method-path-parameters %}
 
-{% api-method-body-parameters %}
+{% api-method-query-parameters %}
 {% api-method-parameter name="password" type="string" required=true %}
-target account password
+account password
 {% endapi-method-parameter %}
-{% endapi-method-body-parameters %}
+{% endapi-method-query-parameters %}
 {% endapi-method-request %}
 
 {% api-method-response %}
 {% api-method-response-example httpCode=200 %}
 {% api-method-response-example-description %}
+The request was successful
+{% endapi-method-response-example-description %}
 
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+The request is not valid
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+Authentication failed \(this server authenticates with password, not token or session\)
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=404 %}
+{% api-method-response-example-description %}
+No accounts found matching the given id
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=422 %}
+{% api-method-response-example-description %}
+The server understood the request and the syntax is correct, but could not fulfill the request
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+An unexpected error occurred inside the server
 {% endapi-method-response-example-description %}
 
 ```
