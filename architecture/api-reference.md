@@ -25,7 +25,27 @@ account name
 {% api-method-response %}
 {% api-method-response-example httpCode=201 %}
 {% api-method-response-example-description %}
+The resource was created or the operation not guaranteed to be idempotent succeeded
+{% endapi-method-response-example-description %}
 
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+The request is not valid
+{% endapi-method-response-example-description %}
+
+```
+
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=500 %}
+{% api-method-response-example-description %}
+An unexpected error occurred inside the server
 {% endapi-method-response-example-description %}
 
 ```
@@ -36,7 +56,7 @@ account name
 {% endapi-method-spec %}
 {% endapi-method %}
 
-{% api-method method="post" host="" path="https://example.com/accounts/remittance" %}
+{% api-method method="post" host="" path="https://example.com/accounts/:accountId/remit" %}
 {% api-method-summary %}
 Remittance
 {% endapi-method-summary %}
@@ -47,11 +67,13 @@ Remittance
 
 {% api-method-spec %}
 {% api-method-request %}
-{% api-method-body-parameters %}
-{% api-method-parameter name="senderId" type="string" required=true %}
-sender account id
+{% api-method-path-parameters %}
+{% api-method-parameter name="accountId" type="string" required=true %}
+accountId
 {% endapi-method-parameter %}
+{% endapi-method-path-parameters %}
 
+{% api-method-body-parameters %}
 {% api-method-parameter name="receiverId" type="string" required=true %}
 receiver account id
 {% endapi-method-parameter %}
@@ -60,7 +82,7 @@ receiver account id
 sender account password
 {% endapi-method-parameter %}
 
-{% api-method-parameter name="amount" type="string" required=true %}
+{% api-method-parameter name="amount" type="integer" required=true %}
 remittance amount
 {% endapi-method-parameter %}
 {% endapi-method-body-parameters %}
